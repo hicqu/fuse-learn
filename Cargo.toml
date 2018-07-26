@@ -1,0 +1,11 @@
+[package]
+name = "fuse-learn"
+version = "0.1.0"
+authors = ["qupeng <qupeng@pingcap.com>"]
+
+[dependencies]
+fuse = "0.3"
+libc = "0.2"
+time = "0.1"
+log = "0.4"
+env_logger = "0.5"
