@@ -1,5 +1,6 @@
 extern crate fuse;
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
 extern crate env_logger;
 extern crate libc;
 extern crate time;
@@ -169,7 +170,7 @@ impl Filesystem for FS {
 
 fn main() {
     env_logger::init();
-    let options = ["-d", "-f", "-o", "allow_other"]
+    let options = ["-s", "-d", "-f", "-o", "allow_other"]
         .iter()
         .map(|o| o.as_ref())
         .collect::<Vec<&OsStr>>();
