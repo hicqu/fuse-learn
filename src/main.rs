@@ -237,6 +237,10 @@ impl Filesystem for FS {
         f.attr.size = f.content.len() as u64;
     }
 
+    fn fsync(&mut self, _: &Request, ino: u64, _fh: u64, _datasync: bool, reply: ReplyEmpty) {
+        reply.error(libc::EIO);
+    }
+
     fn read(&mut self, _: &Request, ino: u64, _fh: u64, offset: i64, size: u32, reply: ReplyData) {
         assert!(offset >= 0);
         let offset = offset as usize;
@@ -250,22 +254,6 @@ impl Filesystem for FS {
         let end = cmp::min(f.content.len(), offset + size as usize);
         reply.data(&f.content[offset..end])
     }
-
-    // fn read(
-    //     &mut self,
-    //     _req: &Request,
-    //     ino: u64,
-    //     _fh: u64,
-    //     offset: i64,
-    //     _size: u32,
-    //     reply: ReplyData,
-    // ) {
-    //     if ino == 2 {
-    //         reply.data(&HELLO_TXT_CONTENT.as_bytes()[offset as usize..]);
-    //     } else {
-    //         reply.error(ENOENT);
-    //     }
-    // }
 }
 
 fn main() {
