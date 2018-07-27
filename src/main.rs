@@ -229,7 +229,7 @@ impl Filesystem for FS {
             return;
         }
 
-        debug!("trying to write {} bytes at offset {}", data.len(), offset);
+        info!("trying to write {} bytes at offset {}", data.len(), offset);
         let bytes = cmp::min(data.len(), f.content.len() - offset);
         (0..bytes).for_each(|i| f.content[offset + i] = data[i]);
         data[bytes..].iter().for_each(|b| f.content.push(*b));
@@ -246,7 +246,7 @@ impl Filesystem for FS {
             return;
         }
 
-        debug!("trying to read {} bytes at offset {}", size, offset);
+        info!("trying to read {} bytes at offset {}", size, offset);
         let end = cmp::min(f.content.len(), offset + size as usize);
         reply.data(&f.content[offset..end])
     }
