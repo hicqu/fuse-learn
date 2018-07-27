@@ -182,6 +182,18 @@ impl Filesystem for FS {
         reply.error(libc::ENOENT);
     }
 
+    fn opendir(&mut self, _: &Request, ino: u64, flags: u32, reply: ReplyOpen) {
+        if ino == 1 {
+            reply.opened(0, flags);
+            return;
+        }
+        reply.error(libc::ENOENT);
+    }
+
+    fn releasedir(&mut self, _: &Request, _: u64, _: u64, _: u32, reply: ReplyEmpty) {
+        reply.ok();
+    }
+
     // fn read(
     //     &mut self,
     //     _req: &Request,
