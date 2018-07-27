@@ -50,8 +50,8 @@ impl FS {
             kind: FileType::Directory,
             perm: 0o755,
             nlink: 2,
-            uid: 1001,
-            gid: 1001,
+            uid: 1000,
+            gid: 1000,
             rdev: 0,
             flags: 0,
         };
@@ -94,10 +94,12 @@ impl Filesystem for FS {
         let f = self.m.get(&parent).unwrap();
         for entry in &f.sub_entries {
             if &entry.0 == name.to_str().unwrap() {
+                debug!("lookup {}, {} ok", parent, name.to_str().unwrap());
                 reply.entry(&TTL, &f.attr, 0);
                 return;
             }
         }
+        debug!("lookup {}, {} fail", parent, name.to_str().unwrap());
         reply.error(libc::ENOENT);
     }
 
@@ -137,8 +139,8 @@ impl Filesystem for FS {
             kind: FileType::RegularFile,
             perm: mode as u16,
             nlink: 1,
-            uid: 1001,
-            gid: 1001,
+            uid: 1000,
+            gid: 1000,
             rdev: 0,
             flags: flags,
         };
@@ -184,13 +186,15 @@ impl Filesystem for FS {
 
     fn opendir(&mut self, _: &Request, ino: u64, flags: u32, reply: ReplyOpen) {
         if ino == 1 {
+            debug!("opendir {} ok", ino);
             reply.opened(0, flags);
             return;
         }
         reply.error(libc::ENOENT);
     }
 
-    fn releasedir(&mut self, _: &Request, _: u64, _: u64, _: u32, reply: ReplyEmpty) {
+    fn releasedir(&mut self, _: &Request, ino: u64, _: u64, _: u32, reply: ReplyEmpty) {
+        debug!("release dir {} ok", ino);
         reply.ok();
     }
 
