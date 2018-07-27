@@ -87,17 +87,13 @@ impl Filesystem for FS {
 
     fn lookup(&mut self, _: &Request, parent: u64, name: &OsStr, reply: ReplyEntry) {
         if parent != 1 {
-            debug!("parent is not 1");
             // Not supported.
             reply.error(libc::ENOENT);
             return;
         }
         let f = self.m.get(&parent).unwrap();
-        debug!("sub entries len: {}", f.sub_entries.len());
         for entry in &f.sub_entries {
-            debug!("want: {:?}, scan: {:?}", name.to_str().unwrap(), entry.0);
             if &entry.0 == name.to_str().unwrap() {
-                debug!("found {:?} when lookup", name.to_str());
                 reply.entry(&TTL, &f.attr, 0);
                 return;
             }
@@ -148,7 +144,42 @@ impl Filesystem for FS {
         };
         self.m.insert(next_ino, F::with_attr(attr, parent));
         reply.created(&TTL, &self.m[&next_ino].attr, 0, 0, 0);
-        debug!("create {} success", name);
+    }
+
+    fn setattr(
+        &mut self,
+        _: &Request,
+        ino: u64,
+        mode: Option<u32>,
+        _uid: Option<u32>,
+        _gid: Option<u32>,
+        _size: Option<u64>,
+        atime: Option<Timespec>,
+        mtime: Option<Timespec>,
+        _fh: Option<u64>,
+        crtime: Option<Timespec>,
+        chgtime: Option<Timespec>,
+        _bkuptime: Option<Timespec>,
+        flags: Option<u32>,
+        reply: ReplyAttr,
+    ) {
+        if let Some(f) = self.m.get_mut(&ino) {
+            if let Some(mode) = mode {
+                debug!("set mode to {}", mode);
+                f.attr.perm = mode as u16;
+            }
+            if let Some(flags) = flags {
+                debug!("set flags to {}", flags);
+                f.attr.flags = flags;
+            }
+            debug!(
+                "atime: {:?}, mtime: {:?}, crtime: {:?}, chgtime: {:?}",
+                atime, mtime, crtime, chgtime
+            );
+            reply.attr(&TTL, &f.attr);
+            return;
+        }
+        reply.error(libc::ENOENT);
     }
 
     // fn read(
