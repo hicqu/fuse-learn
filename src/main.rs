@@ -95,8 +95,8 @@ impl Filesystem for FS {
         for entry in &f.sub_entries {
             if &entry.0 == name.to_str().unwrap() {
                 debug!("lookup parent {}, {} ok", parent, name.to_str().unwrap());
-                debug!("attr: {:?}", f.attr);
-                reply.entry(&TTL, &f.attr, 0);
+                debug!("attr: {:?}", self.m.get(&entry.1).unwrap().attr);
+                reply.entry(&TTL, &self.m.get(&entry.1).unwrap().attr, 0);
                 return;
             }
         }
