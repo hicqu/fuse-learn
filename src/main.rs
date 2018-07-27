@@ -234,7 +234,21 @@ impl Filesystem for FS {
         (0..bytes).for_each(|i| f.content[offset + i] = data[i]);
         data[bytes..].iter().for_each(|b| f.content.push(*b));
         reply.written(data.len() as u32);
-        debug!("write ok");
+        f.attr.size = f.content.len() as u64;
+    }
+
+    fn read(&mut self, _: &Request, ino: u64, _fh: u64, offset: i64, size: u32, reply: ReplyData) {
+        assert!(offset >= 0);
+        let offset = offset as usize;
+        let f = self.m.get_mut(&ino).unwrap();
+        if offset > f.content.len() {
+            reply.error(libc::EFAULT);
+            return;
+        }
+
+        debug!("trying to read {} bytes at offset {}", size, offset);
+        let end = cmp::min(f.content.len(), offset + size as usize);
+        reply.data(&f.content[offset..end])
     }
 
     // fn read(
