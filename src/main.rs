@@ -5,6 +5,7 @@ extern crate env_logger;
 extern crate libc;
 extern crate time;
 
+use std::cmp;
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::path::PathBuf;
@@ -94,13 +95,10 @@ impl Filesystem for FS {
         let f = self.m.get(&parent).unwrap();
         for entry in &f.sub_entries {
             if &entry.0 == name.to_str().unwrap() {
-                debug!("lookup parent {}, {} ok", parent, name.to_str().unwrap());
-                debug!("attr: {:?}", self.m.get(&entry.1).unwrap().attr);
                 reply.entry(&TTL, &self.m.get(&entry.1).unwrap().attr, 0);
                 return;
             }
         }
-        debug!("lookup {}, {} fail", parent, name.to_str().unwrap());
         reply.error(libc::ENOENT);
     }
 
@@ -156,29 +154,35 @@ impl Filesystem for FS {
         mode: Option<u32>,
         _uid: Option<u32>,
         _gid: Option<u32>,
-        _size: Option<u64>,
+        size: Option<u64>,
         atime: Option<Timespec>,
         mtime: Option<Timespec>,
         _fh: Option<u64>,
-        crtime: Option<Timespec>,
-        chgtime: Option<Timespec>,
+        _crtime: Option<Timespec>,
+        _chgtime: Option<Timespec>,
         _bkuptime: Option<Timespec>,
         flags: Option<u32>,
         reply: ReplyAttr,
     ) {
         if let Some(f) = self.m.get_mut(&ino) {
             if let Some(mode) = mode {
-                debug!("set mode to {}", mode);
                 f.attr.perm = mode as u16;
             }
             if let Some(flags) = flags {
-                debug!("set flags to {}", flags);
                 f.attr.flags = flags;
             }
-            debug!(
-                "atime: {:?}, mtime: {:?}, crtime: {:?}, chgtime: {:?}",
-                atime, mtime, crtime, chgtime
-            );
+            if let Some(size) = size {
+                debug!("modify size: {}", size);
+                f.attr.size = size;
+            }
+            if let Some(mtime) = mtime {
+                debug!("modify mtime: {:?}", mtime);
+                f.attr.mtime = mtime;
+            }
+            if let Some(atime) = atime {
+                debug!("modify atime: {:?}", atime);
+                f.attr.atime = atime;
+            }
             reply.attr(&TTL, &f.attr);
             return;
         }
@@ -187,21 +191,50 @@ impl Filesystem for FS {
 
     fn opendir(&mut self, _: &Request, ino: u64, flags: u32, reply: ReplyOpen) {
         if ino == 1 {
-            debug!("opendir {} ok", ino);
             reply.opened(0, flags);
             return;
         }
         reply.error(libc::ENOENT);
     }
 
-    fn releasedir(&mut self, _: &Request, ino: u64, _: u64, _: u32, reply: ReplyEmpty) {
-        debug!("release dir {} ok", ino);
+    fn releasedir(&mut self, _: &Request, _: u64, _: u64, _: u32, reply: ReplyEmpty) {
         reply.ok();
     }
 
-    fn statfs(&mut self, _: &Request, ino: u64, reply: ReplyStatfs) {
-        debug!("statfs on {}", ino);
-        reply.statfs(0, 1, 100, 100, 1, 1, 0, 0);
+    fn open(&mut self, _: &Request, ino: u64, flags: u32, reply: ReplyOpen) {
+        if let Some(f) = self.m.get(&ino) {
+            if f.attr.kind == FileType::RegularFile {
+                reply.opened(0, flags);
+                return;
+            }
+        }
+        reply.error(libc::ENOENT);
+    }
+
+    fn write(
+        &mut self,
+        _: &Request,
+        ino: u64,
+        _fh: u64,
+        offset: i64,
+        data: &[u8],
+        _flags: u32,
+        reply: ReplyWrite,
+    ) {
+        assert!(offset >= 0);
+        let offset = offset as usize;
+        let f = self.m.get_mut(&ino).unwrap();
+        if offset > f.content.len() {
+            reply.error(libc::EFAULT);
+            return;
+        }
+
+        debug!("trying to write {} bytes at offset {}", data.len(), offset);
+        let bytes = cmp::min(data.len(), f.content.len() - offset);
+        (0..bytes).for_each(|i| f.content[offset + i] = data[i]);
+        data[bytes..].iter().for_each(|b| f.content.push(*b));
+        reply.written(data.len() as u32);
+        debug!("write ok");
     }
 
     // fn read(
