@@ -237,7 +237,8 @@ impl Filesystem for FS {
         f.attr.size = f.content.len() as u64;
     }
 
-    fn fsync(&mut self, _: &Request, _ino: u64, _fh: u64, _datasync: bool, reply: ReplyEmpty) {
+    fn fsync(&mut self, _: &Request, ino: u64, _fh: u64, _datasync: bool, reply: ReplyEmpty) {
+        info!("fsync is called for {}", ino);
         reply.error(libc::EIO);
     }
 
