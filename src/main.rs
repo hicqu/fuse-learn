@@ -94,7 +94,8 @@ impl Filesystem for FS {
         let f = self.m.get(&parent).unwrap();
         for entry in &f.sub_entries {
             if &entry.0 == name.to_str().unwrap() {
-                debug!("lookup {}, {} ok", parent, name.to_str().unwrap());
+                debug!("lookup parent {}, {} ok", parent, name.to_str().unwrap());
+                debug!("attr: {:?}", f.attr);
                 reply.entry(&TTL, &f.attr, 0);
                 return;
             }
@@ -196,6 +197,11 @@ impl Filesystem for FS {
     fn releasedir(&mut self, _: &Request, ino: u64, _: u64, _: u32, reply: ReplyEmpty) {
         debug!("release dir {} ok", ino);
         reply.ok();
+    }
+
+    fn statfs(&mut self, _: &Request, ino: u64, reply: ReplyStatfs) {
+        debug!("statfs on {}", ino);
+        reply.statfs(0, 1, 100, 100, 1, 1, 0, 0);
     }
 
     // fn read(
