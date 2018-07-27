@@ -120,7 +120,7 @@ impl Filesystem for FS {
             return;
         }
         let name = name.to_str().unwrap().to_owned();
-        let next_ino = self.m.len() as u64;
+        let next_ino = self.m.len() as u64 + 1; // The first is 1 instead of 0!
 
         if let Some(f) = self.m.get_mut(&parent) {
             assert!(f.attr.kind == FileType::Directory);
