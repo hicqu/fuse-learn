@@ -21,7 +21,7 @@ fn main() {
     loop {
         let offset = rand::random::<u64>() % (1 << 20);
         f.seek(SeekFrom::Start(offset)).unwrap();
-        f.read(&mut buf).unwrap();
+        println!("read {} bytes", f.read(&mut buf).unwrap());
         thread::sleep(Duration::from_millis(100));
     }
 }
