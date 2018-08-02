@@ -1,7 +1,9 @@
+extern crate libc;
 extern crate rand;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::io::SeekFrom;
+use std::os::unix::io::AsRawFd;
 use std::thread;
 use std::time::Duration;
 
@@ -16,6 +18,11 @@ fn main() {
         .open("a/x")
         .unwrap();
     f.write_all(&data).unwrap();
+
+    unsafe {
+        let fd = f.as_raw_fd();
+        assert!(libc::syscall(libc::SYS_syncfs, fd) == 0);
+    };
 
     let mut buf = vec![0; 4096];
     loop {
